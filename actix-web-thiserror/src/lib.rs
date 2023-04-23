@@ -1,4 +1,4 @@
-//! This crate extends the [thiserror] crate functionality to automatically
+//! A crate that extends the [thiserror] crate functionality to automatically
 //! return a proper [actix-web] response.
 //!
 //! ## Error definition
