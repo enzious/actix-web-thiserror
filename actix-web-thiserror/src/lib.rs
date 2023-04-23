@@ -1,4 +1,4 @@
-#![doc = include_str!("../../README.md")]
+#![doc = include_str!("../README.md")]
 
 use std::sync::Arc;
 
@@ -28,13 +28,29 @@ struct ReflexiveTransform;
 impl ResponseTransform for ReflexiveTransform {}
 
 lazy_static! {
-  pub(crate) static ref RESPONSE_TRANSFORM: ArcSwap<Box<dyn ResponseTransform + Sync + Send>> =
+  static ref RESPONSE_TRANSFORM: ArcSwap<Box<dyn ResponseTransform + Sync + Send>> =
     ArcSwap::from(Arc::new(Box::new(ReflexiveTransform {}) as _));
 }
 
 /// Sets the default global transform for errors into responses.
 pub fn set_global_transform(transform: impl ResponseTransform + Sync + Send + 'static) {
   RESPONSE_TRANSFORM.swap(Arc::new(Box::new(transform)));
+}
+
+#[doc(hidden)]
+pub fn apply_global_transform(
+  name: &str,
+  err: &dyn std::error::Error,
+  status_code: http::StatusCode,
+  reason: Option<serde_json::Value>,
+) -> HttpResponse {
+  ResponseTransform::transform(
+    (&**RESPONSE_TRANSFORM.load()).as_ref(),
+    name,
+    err,
+    status_code,
+    reason,
+  )
 }
 
 #[doc(hidden)]

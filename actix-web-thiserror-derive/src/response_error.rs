@@ -158,7 +158,7 @@ pub fn derive_response_error(input: TokenStream) -> TokenStream {
         .map(|func| {
           proc_macro2::TokenStream::from_iter(forwards.iter().map(|variant| {
             quote! {
-              #name::#variant(inner) => ::actix_web_thiserror::ThisErrorResponse::#func(inner),
+              #name::#variant(inner) => ::actix_web_thiserror::ThiserrorResponse::#func(inner),
             }
           }))
         })
@@ -187,7 +187,7 @@ pub fn derive_response_error(input: TokenStream) -> TokenStream {
 
     impl actix_web::error::ResponseError for #name {
       fn status_code(&self) -> http::StatusCode {
-        match ::actix_web_thiserror::ThisErrorResponse::status_code(self) {
+        match ::actix_web_thiserror::ThiserrorResponse::status_code(self) {
           Some(status_code) => status_code,
           _ => {
             match self {
@@ -200,7 +200,7 @@ pub fn derive_response_error(input: TokenStream) -> TokenStream {
       }
 
       fn error_response(&self) -> actix_web::HttpResponse {
-        let reason: Option<serde_json::Value> = ::actix_web_thiserror::ThisErrorResponse::reason(self)
+        let reason: Option<serde_json::Value> = ::actix_web_thiserror::ThiserrorResponse::reason(self)
           .unwrap_or(match self {
             #reason_forwards
             _ => None,
@@ -209,9 +209,8 @@ pub fn derive_response_error(input: TokenStream) -> TokenStream {
 
         error!("Response error: {err}\n\t{name}({err:?})", name = #name_str, err = &self);
 
-        actix_web_thiserror::ResponseTransform::transform(
-          (&**actix_web_thiserror::RESPONSE_TRANSFORM.load()).as_ref(),
-          "",
+        actix_web_thiserror::apply_global_transform(
+          #name_str,
           &self,
           self.status_code(),
           reason,
