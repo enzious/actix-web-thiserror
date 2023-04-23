@@ -2,10 +2,13 @@
 name = "actix-web-thiserror-derive"
 version = "0.1.0"
 authors = ["enzi <enzi@braindead.io>"]
+description = "Implementation of #[derive(ResponseError)]"
 edition = "2021"
 license = "MIT"
+repository = "https://github.com/enzious/actix-web-thiserror"
 
 [lib]
+name = "actix_web_thiserror_derive"
 proc-macro = true
 
 [dependencies]

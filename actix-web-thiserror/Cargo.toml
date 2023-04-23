@@ -2,6 +2,7 @@
 name = "actix-web-thiserror"
 version = "0.1.0"
 authors = ["enzi <enzi@braindead.io>"]
+description = "Extend thiserror crate functionality for actix-web."
 edition = "2021"
 license = "MIT"
 

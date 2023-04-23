@@ -41,9 +41,8 @@ pub async fn error_test() -> Result<HttpResponse, Error> {
 
 ## Error response
 
-The reason is a string that maybe be given to the client in some
-form to explain the error if appropriate. Here it is an enum that can be
-localized.
+The reason is a string that may be given to the client in some form to explain
+the error, if appropriate. Here it is an enum that can be localized.
 
 **Note:** This response has been formatted by a [`ResponseTransform`][response_transform].
 
@@ -56,8 +55,8 @@ localized.
 
 ## Error logging
 
-In the logs, you can show the error text automatically when the error is
-returned out through a http response.
+The error text automatically prints to the log when the error is returned out
+through a http response.
 
 ```
 Apr 23 02:19:35.211 ERRO Response error: invalid image format
