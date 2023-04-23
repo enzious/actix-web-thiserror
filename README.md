@@ -37,8 +37,8 @@ pub async fn error_test() -> Result<HttpResponse, Error> {
 
 ## Error response
 
-The reason is a string that may be given to the client in some form to explain
-the error, if appropriate. Here it is an enum that can be localized.
+The `reason` is a string that may be given to the client in some form to explain
+the error, if appropriate. Here it is as an enum that can be localized.
 
 **Note:** This response has been formatted by a [`ResponseTransform`][response_transform].
 
