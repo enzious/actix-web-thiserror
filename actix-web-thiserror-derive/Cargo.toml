@@ -1,0 +1,17 @@
+[package]
+name = "actix-web-thiserror-derive"
+version = "0.1.0"
+authors = ["enzi <enzi@braindead.io>"]
+edition = "2021"
+license = "MIT"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+arc-swap = "1.6.0"
+http = "0.2.9"
+lazy_static = "1.4.0"
+proc-macro2 = "1.0.56"
+quote = "1.0.26"
+syn = { version = "1.0.107", features = ["extra-traits"] }
