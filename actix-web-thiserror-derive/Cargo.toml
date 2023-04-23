@@ -6,6 +6,8 @@ description = "Implementation of #[derive(ResponseError)]"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/enzious/actix-web-thiserror"
+include = ["/src", "/README.md", "/LICENSE.md", "/crates-io.md"]
+readme = "crates-io.md"
 
 [lib]
 name = "actix_web_thiserror_derive"
