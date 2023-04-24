@@ -8,6 +8,7 @@ license = "MIT"
 repository = "https://github.com/enzious/actix-web-thiserror"
 include = ["/src", "/README.md", "/LICENSE.md", "/crates-io.md"]
 readme = "crates-io.md"
+documentation = "https://docs.rs/actix-web-thiserror-derive"
 
 [lib]
 name = "actix_web_thiserror_derive"
