@@ -1,6 +1,5 @@
 on:
   push:
-    # Pattern matched against refs/tags
     tags:        
       - 'v[0-9]+.[0-9]+.[0-9]+'
   # Allow manual triggering
@@ -13,20 +12,42 @@ jobs:
     name: Publish
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout sources
-        uses: actions/checkout@v2
-
-      - name: Install stable toolchain
-        uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v3
+      - # FIXME: Switch back when actions-rs/toolchain#{209,220,222} is merged
+        uses: r3-os/actions-rust-toolchain@a862b6623c178b43a3135516442a5f72fb5c1877
         with:
           profile: minimal
           toolchain: stable
           override: true
 
-      - run: cargo publish -p actix-web-thiserror --token ${CRATES_TOKEN}
-        env:
-          CRATES_TOKEN: ${{ secrets.CRATES_TOKEN }}
+      - name: cargo-release Cache
+        id: cargo_release_cache
+        uses: actions/cache@v3
+        with:
+          path: ~/.cargo/bin/cargo-release
+          key: ${{ runner.os }}-cargo-release
 
-      - run: cargo publish -p actix-web-thiserror --token ${CRATES_TOKEN}
-        env:
-          CRATES_TOKEN: ${{ secrets.CRATES_TOKEN }}
+      - # FIXME: Switch back when actions-rs/cargo#217 gets merged
+        uses: r3-os/actions-rust-cargo@fb222fe18dc90e381546d012f9e3d6f353f0f627
+        if: steps.cargo_release_cache.outputs.cache-hit != 'true'
+        with:
+          command: install
+          args: cargo-release
+
+      - name: cargo login
+        # FIXME: Switch back when actions-rs/cargo#217 gets merged
+        uses: r3-os/actions-rust-cargo@fb222fe18dc90e381546d012f9e3d6f353f0f627
+        with:
+          command: login
+          args: ${{ secrets.CRATES_TOKEN }}
+
+      - name: "cargo release publish"
+        run: |-
+          cargo release \
+            publish \
+            --workspace \
+            --all-features \
+            --allow-branch HEAD \
+            --no-confirm \
+            --no-verify \
+            --execute
