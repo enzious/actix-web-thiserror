@@ -1,9 +1,9 @@
 on:
-  push:
+  create:
     # Pattern matched against refs/tags
     tags:        
-      - '^v\d+.\d+.\d+(-r[0-9]*)?$'           # Push events to every tag not containing /
-      # Allow manual triggering
+    - '^v\d+\.\d+\.\d+(-r[0-9]*)?$'           # Push events to every tag not containing /
+  # Allow manual triggering
   # workflow_dispatch:
 
 name: Publish
