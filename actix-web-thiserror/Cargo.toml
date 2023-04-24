@@ -1,6 +1,6 @@
 [package]
 name = "actix-web-thiserror"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["enzi <enzi@braindead.io>"]
 description = "Extend thiserror crate functionality for actix-web."
 edition = "2021"
