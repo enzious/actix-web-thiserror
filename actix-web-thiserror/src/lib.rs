@@ -10,7 +10,7 @@
 //!
 //! ## Documentation
 //!
-//! - [API Documentation](https://crates.io/crates/actix-web-thiserror)
+//! - [API Documentation](https://docs.rs/actix-web-thiserror)
 //!
 //! ## Error definition
 //! ```rust
