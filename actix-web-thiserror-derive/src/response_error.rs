@@ -194,7 +194,7 @@ pub fn derive_response_error(input: TokenStream) -> TokenStream {
               #status_code_forwards
               _ => None
             }
-              .unwrap_or(http::StatusCode::OK)
+              .unwrap_or(actix_web_thiserror::default_global_error_status_code())
           },
         }
       }

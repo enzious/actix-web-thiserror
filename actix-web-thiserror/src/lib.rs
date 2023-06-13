@@ -97,6 +97,10 @@ pub trait ResponseTransform {
   ) -> HttpResponse {
     actix_web::HttpResponse::build(status_code).finish()
   }
+
+  fn default_error_status_code(&self) -> http::StatusCode {
+    http::StatusCode::INTERNAL_SERVER_ERROR
+  }
 }
 
 struct ReflexiveTransform;
@@ -127,6 +131,11 @@ pub fn apply_global_transform(
     status_code,
     reason,
   )
+}
+
+#[doc(hidden)]
+pub fn default_global_error_status_code() -> http::StatusCode {
+  ResponseTransform::default_error_status_code((&**RESPONSE_TRANSFORM.load()).as_ref())
 }
 
 #[doc(hidden)]
