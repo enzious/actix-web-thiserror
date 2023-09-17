@@ -6,8 +6,17 @@ use proc_macro2::{token_stream::IntoIter, TokenTree};
 use quote::quote;
 use syn::DeriveInput;
 
-pub fn derive_response_error(input: TokenStream) -> TokenStream {
-  let ast = syn::parse_macro_input!(input as DeriveInput);
+pub struct Data {
+  name: proc_macro2::Ident,
+  status_code_match: Option<proc_macro2::TokenStream>,
+  reason_match: Option<proc_macro2::TokenStream>,
+  status_code_forwards: Option<proc_macro2::TokenStream>,
+  reason_forwards: Option<proc_macro2::TokenStream>,
+  name_str: String,
+}
+
+pub fn derive_response_error_data(input: TokenStream) -> Data {
+  let ast = syn::parse::<DeriveInput>(input).unwrap();
 
   let name = ast.ident;
   let name_str = name.to_string();
@@ -168,6 +177,18 @@ pub fn derive_response_error(input: TokenStream) -> TokenStream {
     }
   };
 
+  return Data { name, status_code_match, reason_match, status_code_forwards, reason_forwards, name_str }
+}
+
+pub fn derive_response_error(input: TokenStream) -> TokenStream {
+  let data = derive_response_error_data(input);
+  let name = data.name;
+  let status_code_match = data.status_code_match;
+  let reason_match = data.reason_match;
+  let status_code_forwards = data.status_code_forwards;
+  let reason_forwards = data.reason_forwards;
+  let name_str = data.name_str;
+
   let expanded = quote! {
     impl ::actix_web_thiserror::ThiserrorResponse for #name {
       fn status_code(&self) -> Option<http::StatusCode> {
@@ -222,6 +243,63 @@ pub fn derive_response_error(input: TokenStream) -> TokenStream {
   TokenStream::from(expanded)
 }
 
+pub fn derive_response_error_transform(input: TokenStream) -> TokenStream {
+  let data = derive_response_error_data(input);
+  let name = data.name;
+  let status_code_match = data.status_code_match;
+  let reason_match = data.reason_match;
+  let status_code_forwards = data.status_code_forwards;
+  let reason_forwards = data.reason_forwards;
+  let name_str = data.name_str;
+
+  let expanded = quote! {
+    impl ::actix_web_thiserror::ThiserrorResponse for #name {
+      fn status_code(&self) -> Option<http::StatusCode> {
+        match self {
+          #status_code_match
+          _ => None,
+        }
+      }
+
+      fn reason(&self) -> Option<Option<serde_json::Value>> {
+        match self {
+          #reason_match
+          _ => None,
+        }
+      }
+    }
+
+    impl actix_web::error::ResponseError for #name {
+      fn status_code(&self) -> http::StatusCode {
+        match ::actix_web_thiserror::ThiserrorResponse::status_code(self) {
+          Some(status_code) => status_code,
+          _ => {
+            match self {
+              #status_code_forwards
+              _ => None
+            }
+              .unwrap_or(actix_web_thiserror::default_global_error_status_code())
+          },
+        }
+      }
+
+      fn error_response(&self) -> actix_web::HttpResponse {
+        let reason: Option<serde_json::Value> = ::actix_web_thiserror::ThiserrorResponse::reason(self)
+          .unwrap_or(match self {
+            #reason_forwards
+            _ => None,
+          }
+            .and_then(|value| value));
+
+        error!("Response error: {err}\n\t{name}({err:?})", name = #name_str, err = &self);
+
+        self.transform(#name_str, &self, self.status_code(), reason)
+      }
+    }
+  };
+
+  TokenStream::from(expanded)
+}
 fn get_ident_stream(tokens: &mut Peekable<IntoIter>) -> Option<proc_macro2::TokenStream> {
   match tokens.next() {
     Some(TokenTree::Ident(value)) => {

@@ -157,3 +157,8 @@ extern crate actix_web_thiserror_derive;
 ///
 /// [thiserror]: https://docs.rs/thiserror
 pub use actix_web_thiserror_derive::ResponseError;
+
+/// The derive implementation for extending [thiserror] with a custom transform implementation
+/// 
+/// [thiserror]: https://docs.rs/thiserror
+pub use actix_web_thiserror_derive::ResponseErrorTransform;
