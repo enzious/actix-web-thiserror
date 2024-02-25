@@ -20,4 +20,4 @@ http = "0.2.9"
 lazy_static = "1.4.0"
 proc-macro2 = "1.0.56"
 quote = "1.0.26"
-syn = { version = "1.0.107", features = ["extra-traits"] }
+syn = { version = "1.0.107", features = ["full"] }
