@@ -15,7 +15,6 @@ documentation = "https://docs.rs/actix-web-thiserror"
 actix-web = "4.3.1"
 actix-web-thiserror-derive = { version = "0.2.0", path = "../actix-web-thiserror-derive" }
 arc-swap = "1.6.0"
-http = "0.2.9"
 lazy_static = "1.4.0"
 serde_json = "1.0.96"
 

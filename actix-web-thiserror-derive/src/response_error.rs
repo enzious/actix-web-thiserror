@@ -204,7 +204,7 @@ pub fn derive_response_error(input: TokenStream) -> TokenStream {
 
   let expanded = quote! {
     impl ::actix_web_thiserror::ThiserrorResponse for #name {
-      fn status_code(&self) -> Option<http::StatusCode> {
+      fn status_code(&self) -> Option<actix_web::http::StatusCode> {
         match self {
           #status_code_match
           _ => None,
@@ -220,7 +220,7 @@ pub fn derive_response_error(input: TokenStream) -> TokenStream {
     }
 
     impl actix_web::error::ResponseError for #name {
-      fn status_code(&self) -> http::StatusCode {
+      fn status_code(&self) -> actix_web::http::StatusCode {
         match ::actix_web_thiserror::ThiserrorResponse::status_code(self) {
           Some(status_code) => status_code,
           _ => {
@@ -311,7 +311,7 @@ fn get_status_code_literal(tokens: &mut Peekable<IntoIter>) -> Option<proc_macro
         .to_string()
         .parse::<u16>()
         .ok()
-        .and_then(|status| http::StatusCode::from_u16(status).ok())
+        .and_then(|status| actix_web::http::StatusCode::from_u16(status).ok())
         .is_none()
       {
         panic!("invalid status code");
@@ -345,7 +345,7 @@ fn get_status_code(tokens: &mut Peekable<IntoIter>) -> Option<proc_macro2::Token
 
     Some(TokenTree::Literal(_)) => get_status_code_literal(tokens).map(|tokens| {
       quote! {
-        http::StatusCode::from_u16(#tokens as u16)
+        actix_web::http::StatusCode::from_u16(#tokens as u16)
           .unwrap_or_else(|_| unreachable!())
       }
     }),
