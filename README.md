@@ -15,7 +15,6 @@ return a proper [actix-web] response.
 ## Error definition
 ```rust
 use actix_web_thiserror::ResponseError;
-use log::error;
 use thiserror::Error;
 
 #[derive(Debug, Error, ResponseError)]

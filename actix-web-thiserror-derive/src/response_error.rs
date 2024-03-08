@@ -241,7 +241,7 @@ pub fn derive_response_error(input: TokenStream) -> TokenStream {
           }
             .and_then(|value| value));
 
-        error!("Response error: {err}\n\t{name}({err:?})", name = #name_str, err = &self);
+        log::error!("Response error: {err}\n\t{name}({err:?})", name = #name_str, err = &self);
 
         #transform(
           #name_str,

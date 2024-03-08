@@ -15,7 +15,6 @@
 //! ## Error definition
 //! ```rust
 //! use actix_web_thiserror::ResponseError;
-//! # use log::error;
 //! use thiserror::Error;
 //!
 //! #[derive(Debug, Error, ResponseError)]
@@ -33,7 +32,6 @@
 //! ```rust
 //! # use actix_web_thiserror::ResponseError;
 //! # use actix_web::*;
-//! # use log::error;
 //! # use thiserror::Error;
 //! #
 //! # #[derive(Debug, Error, ResponseError)]
@@ -55,7 +53,7 @@
 //!
 //! **Note:** This response has been formatted by a [`ResponseTransform`][response_transform].
 //!
-//! ```ignore
+//! ```json
 //! {
 //!     "result": 0,
 //!     "reason": "INVALID_IMAGE_FORMAT"
@@ -67,7 +65,7 @@
 //! The error text automatically prints to the log when the error is returned out
 //! through a http response.
 //!
-//! ```ignore
+//! ```text
 //! Apr 23 02:19:35.211 ERRO Response error: invalid image format
 //!     Base64ImageError(InvalidImageFormat), place: example/src/handler.rs:5 example::handler
 //! ```
