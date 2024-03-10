@@ -15,8 +15,8 @@ name = "actix_web_thiserror_derive"
 proc-macro = true
 
 [dependencies]
+actix-web = "4.3.1"
 arc-swap = "1.6.0"
-http = "0.2.9"
 lazy_static = "1.4.0"
 proc-macro2 = "1.0.56"
 quote = "1.0.26"

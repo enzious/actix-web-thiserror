@@ -92,14 +92,14 @@ pub trait ResponseTransform {
     &self,
     name: &str,
     err: &dyn std::error::Error,
-    status_code: http::StatusCode,
+    status_code: actix_web::http::StatusCode,
     reason: Option<serde_json::Value>,
   ) -> HttpResponse {
     actix_web::HttpResponse::build(status_code).finish()
   }
 
-  fn default_error_status_code(&self) -> http::StatusCode {
-    http::StatusCode::INTERNAL_SERVER_ERROR
+  fn default_error_status_code(&self) -> actix_web::http::StatusCode {
+    actix_web::http::StatusCode::INTERNAL_SERVER_ERROR
   }
 }
 
@@ -121,7 +121,7 @@ pub fn set_global_transform(transform: impl ResponseTransform + Sync + Send + 's
 pub fn apply_global_transform(
   name: &str,
   err: &dyn std::error::Error,
-  status_code: http::StatusCode,
+  status_code: actix_web::http::StatusCode,
   reason: Option<serde_json::Value>,
 ) -> HttpResponse {
   ResponseTransform::transform(
@@ -134,13 +134,13 @@ pub fn apply_global_transform(
 }
 
 #[doc(hidden)]
-pub fn default_global_error_status_code() -> http::StatusCode {
+pub fn default_global_error_status_code() -> actix_web::http::StatusCode {
   ResponseTransform::default_error_status_code((&**RESPONSE_TRANSFORM.load()).as_ref())
 }
 
 #[doc(hidden)]
 pub trait ThiserrorResponse {
-  fn status_code(&self) -> Option<http::StatusCode> {
+  fn status_code(&self) -> Option<actix_web::http::StatusCode> {
     None
   }
 
