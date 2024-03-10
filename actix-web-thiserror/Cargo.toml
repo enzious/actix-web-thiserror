@@ -1,6 +1,6 @@
 [package]
 name = "actix-web-thiserror"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["enzi <enzi@braindead.io>"]
 keywords = ["actix", "web", "http", "response", "error"]
 description = "Extend thiserror crate functionality for actix-web."
@@ -13,7 +13,7 @@ documentation = "https://docs.rs/actix-web-thiserror"
 
 [dependencies]
 actix-web = "4.3.1"
-actix-web-thiserror-derive = { version = "0.2.0", path = "../actix-web-thiserror-derive" }
+actix-web-thiserror-derive = { version = "0.2.1", path = "../actix-web-thiserror-derive" }
 arc-swap = "1.6.0"
 lazy_static = "1.4.0"
 serde_json = "1.0.96"
