@@ -2,10 +2,10 @@ use std::collections::{HashMap, HashSet};
 use std::iter::Peekable;
 
 use proc_macro::TokenStream;
-use proc_macro2::{TokenTree, token_stream::IntoIter};
+use proc_macro2::{token_stream::IntoIter, TokenTree};
 use quote::quote;
-use syn::DeriveInput;
 use syn::parse::Parser;
+use syn::DeriveInput;
 
 pub fn derive_response_error(input: TokenStream) -> TokenStream {
   let ast = syn::parse_macro_input!(input as DeriveInput);
@@ -169,31 +169,39 @@ pub fn derive_response_error(input: TokenStream) -> TokenStream {
     }
   };
 
-  let transform = ast.attrs
+  let transform = ast
+    .attrs
     .into_iter()
     .find_map(|x| {
       if !(x.path.segments.len() == 1 && x.path.segments.first()?.ident == "response") {
         return None;
       }
 
-      let proc_macro2::TokenTree::Group(group) = x.tokens.into_iter().next()? else { return None; };
-      let ident_assigns = syn::punctuated::Punctuated::<syn::ExprAssign, syn::Token![,]>::parse_terminated
-        .parse(group.stream().into())
-        .unwrap()
-        .into_iter()
-        .filter_map(|x| {
-          let syn::Expr::Path(syn::ExprPath {path, ..}) = *x.left else { return None; };
-          let left = path.get_ident()?;
-          
-          let syn::Expr::Path(syn::ExprPath {path, ..}) = *x.right else { return None; };
-          let right = path.get_ident()?;
-          
-          Some((left.to_string(), right.to_string()))
-        })
-        .collect::<HashMap<String, String>>();
+      let proc_macro2::TokenTree::Group(group) = x.tokens.into_iter().next()? else {
+        return None;
+      };
+      let ident_assigns =
+        syn::punctuated::Punctuated::<syn::ExprAssign, syn::Token![,]>::parse_terminated
+          .parse(group.stream().into())
+          .unwrap()
+          .into_iter()
+          .filter_map(|x| {
+            let syn::Expr::Path(syn::ExprPath { path, .. }) = *x.left else {
+              return None;
+            };
+            let left = path.get_ident()?;
+
+            let syn::Expr::Path(syn::ExprPath { path, .. }) = *x.right else {
+              return None;
+            };
+            let right = path.get_ident()?;
+
+            Some((left.to_string(), right.to_string()))
+          })
+          .collect::<HashMap<String, String>>();
 
       if ident_assigns.get("transform")? == "custom" {
-        return Some(quote! { self.transform })
+        return Some(quote! { self.transform });
       }
 
       // could add additional to check for invalid options?
@@ -341,7 +349,7 @@ fn get_string(tokens: &mut Peekable<IntoIter>) -> Option<proc_macro2::TokenTree>
 
 fn get_status_code(tokens: &mut Peekable<IntoIter>) -> Option<proc_macro2::TokenStream> {
   match tokens.peek() {
-    Some(TokenTree::Ident(_)) => get_ident_stream(tokens).map(|tokens| tokens),
+    Some(TokenTree::Ident(_)) => get_ident_stream(tokens),
 
     Some(TokenTree::Literal(_)) => get_status_code_literal(tokens).map(|tokens| {
       quote! {
@@ -356,7 +364,7 @@ fn get_status_code(tokens: &mut Peekable<IntoIter>) -> Option<proc_macro2::Token
 
 fn get_reason(tokens: &mut Peekable<IntoIter>) -> Option<proc_macro2::TokenStream> {
   match tokens.peek() {
-    Some(TokenTree::Ident(_)) => get_ident_stream(tokens).map(|tokens| tokens),
+    Some(TokenTree::Ident(_)) => get_ident_stream(tokens),
 
     Some(TokenTree::Literal(_)) => get_string(tokens).map(|tokens| tokens.into()),
 

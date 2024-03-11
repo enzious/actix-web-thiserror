@@ -66,7 +66,7 @@
 //! through a http response.
 //!
 //! ```text
-//! Apr 23 02:19:35.211 ERRO Response error: invalid image format
+//! Apr 23 02:19:35.211 ERROR Response error: invalid image format
 //!     Base64ImageError(InvalidImageFormat), place: example/src/handler.rs:5 example::handler
 //! ```
 //!
@@ -123,7 +123,7 @@ pub fn apply_global_transform(
   reason: Option<serde_json::Value>,
 ) -> HttpResponse {
   ResponseTransform::transform(
-    (&**RESPONSE_TRANSFORM.load()).as_ref(),
+    (**RESPONSE_TRANSFORM.load()).as_ref(),
     name,
     err,
     status_code,
@@ -133,7 +133,7 @@ pub fn apply_global_transform(
 
 #[doc(hidden)]
 pub fn default_global_error_status_code() -> actix_web::http::StatusCode {
-  ResponseTransform::default_error_status_code((&**RESPONSE_TRANSFORM.load()).as_ref())
+  ResponseTransform::default_error_status_code((**RESPONSE_TRANSFORM.load()).as_ref())
 }
 
 #[doc(hidden)]
