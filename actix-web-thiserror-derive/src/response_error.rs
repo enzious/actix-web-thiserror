@@ -19,6 +19,7 @@ pub fn derive_response_error(input: TokenStream) -> TokenStream {
     unimplemented!();
   };
 
+  #[allow(clippy::type_complexity)]
   let (forwards, _internals, mut status_map, mut reason_map): (
     HashSet<proc_macro2::Ident>,
     HashSet<proc_macro2::Ident>,
