@@ -55,7 +55,7 @@ The error text automatically prints to the log when the error is returned out
 through a http response.
 
 ```
-Apr 23 02:19:35.211 ERRO Response error: invalid image format
+Apr 23 02:19:35.211 ERROR Response error: invalid image format
     Base64ImageError(InvalidImageFormat), place: example/src/handler.rs:5 example::handler
 ```
 
