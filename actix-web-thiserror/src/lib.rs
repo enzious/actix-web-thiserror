@@ -92,6 +92,8 @@ pub trait ResponseTransform {
     err: &dyn std::error::Error,
     status_code: actix_web::http::StatusCode,
     reason: Option<serde_json::Value>,
+    _type: Option<String>,
+    details: Option<serde_json::Value>,
   ) -> HttpResponse {
     actix_web::HttpResponse::build(status_code).finish()
   }
@@ -121,6 +123,8 @@ pub fn apply_global_transform(
   err: &dyn std::error::Error,
   status_code: actix_web::http::StatusCode,
   reason: Option<serde_json::Value>,
+  _type: Option<String>,
+  details: Option<serde_json::Value>,
 ) -> HttpResponse {
   ResponseTransform::transform(
     (**RESPONSE_TRANSFORM.load()).as_ref(),
@@ -128,6 +132,8 @@ pub fn apply_global_transform(
     err,
     status_code,
     reason,
+    _type,
+    details,
   )
 }
 
@@ -143,6 +149,14 @@ pub trait ThiserrorResponse {
   }
 
   fn reason(&self) -> Option<Option<serde_json::Value>> {
+    None
+  }
+
+  fn _type(&self) -> Option<Option<String>> {
+    None
+  }
+
+  fn details(&self) -> Option<Option<serde_json::Value>> {
     None
   }
 }
