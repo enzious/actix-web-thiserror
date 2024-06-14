@@ -1,6 +1,6 @@
 [package]
 name = "actix-web-thiserror-derive"
-version = "0.2.2"
+version = "0.2.4"
 authors = ["enzi <enzi@braindead.io>"]
 description = "Implementation of #[derive(ResponseError)]"
 edition = "2021"
