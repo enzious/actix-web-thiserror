@@ -241,7 +241,7 @@ pub fn derive_response_error(input: TokenStream) -> TokenStream {
         let mut streams = vec![
           quote! { status_code },
           quote! { reason },
-          quote! { type },
+          quote! { _type },
           quote! { details },
         ]
         .drain(..)
