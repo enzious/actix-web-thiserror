@@ -20,9 +20,11 @@ pub fn derive_response_error(input: TokenStream) -> TokenStream {
   };
 
   #[allow(clippy::type_complexity)]
-  let (forwards, _internals, mut status_map, mut reason_map): (
+  let (forwards, _internals, mut status_map, mut reason_map, mut type_map, mut details_map): (
     HashSet<proc_macro2::Ident>,
     HashSet<proc_macro2::Ident>,
+    HashMap<proc_macro2::Ident, proc_macro2::TokenStream>,
+    HashMap<proc_macro2::Ident, proc_macro2::TokenStream>,
     HashMap<proc_macro2::Ident, proc_macro2::TokenStream>,
     HashMap<proc_macro2::Ident, proc_macro2::TokenStream>,
   ) = variants.iter().fold(
@@ -31,8 +33,18 @@ pub fn derive_response_error(input: TokenStream) -> TokenStream {
       HashSet::new(),
       HashMap::new(),
       HashMap::new(),
+      HashMap::new(),
+      HashMap::new(),
     ),
-    |(mut forwards, mut internals, mut status_map, mut reason_map), variant| {
+    |(
+      mut forwards,
+      mut internals,
+      mut status_map,
+      mut reason_map,
+      mut type_map,
+      mut details_map,
+    ),
+     variant| {
       let variant_ident = variant.ident.to_owned();
 
       for attr in &variant.attrs {
@@ -66,7 +78,7 @@ pub fn derive_response_error(input: TokenStream) -> TokenStream {
                       if tokens
                         .next()
                         .map(|punct| punct.to_string())
-                        .filter(|punct| &punct as &str == "=")
+                        .filter(|punct| punct as &str == "=")
                         .is_none()
                       {
                         panic!("Invalid #[response] options");
@@ -95,6 +107,28 @@ pub fn derive_response_error(input: TokenStream) -> TokenStream {
                           }
                         }
 
+                        "type" => {
+                          let _type = get_type(&mut tokens);
+
+                          match _type {
+                            Some(_type) => {
+                              type_map.insert(variant_ident.to_owned(), _type);
+                            }
+                            _ => panic!("Invalid `type` in #[response]"),
+                          }
+                        }
+
+                        "details" => {
+                          let details = get_details(&mut tokens);
+
+                          match details {
+                            Some(details) => {
+                              details_map.insert(variant_ident.to_owned(), details);
+                            }
+                            _ => panic!("Invalid `details` in #[response]"),
+                          }
+                        }
+
                         _ => {
                           panic!("Unknown #[response] option: {}", &ident);
                         }
@@ -116,7 +150,14 @@ pub fn derive_response_error(input: TokenStream) -> TokenStream {
         }
       }
 
-      (forwards, internals, status_map, reason_map)
+      (
+        forwards,
+        internals,
+        status_map,
+        reason_map,
+        type_map,
+        details_map,
+      )
     },
   );
 
@@ -152,10 +193,57 @@ pub fn derive_response_error(input: TokenStream) -> TokenStream {
     }
   };
 
-  let (status_code_forwards, reason_forwards) = match forwards.len() {
-    0 => (None, None),
+  let type_match = match type_map.len() {
+    0 => None,
     _ => {
-      let mut streams = vec![quote! { status_code }, quote! { reason }]
+      let mut body: Vec<proc_macro2::TokenStream> = type_map
+        .drain()
+        .map(|(ident, _type)| {
+          quote! {
+            #name::#ident { .. } => Some(Some(#_type.to_owned())),
+          }
+        })
+        .collect();
+
+      Some(proc_macro2::TokenStream::from_iter(body.drain(..)))
+    }
+  };
+
+  let details_match = match details_map.len() {
+    0 => None,
+    _ => {
+      let mut body: Vec<proc_macro2::TokenStream> = details_map
+        .drain()
+        .map(|(ident, details)| {
+          let details = Some(details.to_string())
+            .filter(|details| details.starts_with("\"{0") && details.ends_with("}\""))
+            .and_then(|details| {
+              format!("details{}", &details[3..details.len() - 2])
+                .parse::<proc_macro2::TokenStream>()
+                .ok()
+            })
+            .expect("Failed to find details");
+
+          quote! {
+            #name::#ident(details) => Some(serde_json::to_value(#details).ok()),
+          }
+        })
+        .collect();
+
+      Some(proc_macro2::TokenStream::from_iter(body.drain(..)))
+    }
+  };
+
+  let (status_code_forwards, reason_forwards, type_forwards, details_forwards) =
+    match forwards.len() {
+      0 => (None, None, None, None),
+      _ => {
+        let mut streams = vec![
+          quote! { status_code },
+          quote! { reason },
+          quote! { type },
+          quote! { details },
+        ]
         .drain(..)
         .map(|func| {
           proc_macro2::TokenStream::from_iter(forwards.iter().map(|variant| {
@@ -166,9 +254,14 @@ pub fn derive_response_error(input: TokenStream) -> TokenStream {
         })
         .collect::<Vec<_>>();
 
-      (Some(streams.remove(0)), Some(streams.remove(0)))
-    }
-  };
+        (
+          Some(streams.remove(0)),
+          Some(streams.remove(0)),
+          Some(streams.remove(0)),
+          Some(streams.remove(0)),
+        )
+      }
+    };
 
   let transform = ast
     .attrs
@@ -226,6 +319,20 @@ pub fn derive_response_error(input: TokenStream) -> TokenStream {
           _ => None,
         }
       }
+
+      fn _type(&self) -> Option<Option<String>> {
+        match self {
+          #type_match
+          _ => None,
+        }
+      }
+
+      fn details(&self) -> Option<Option<serde_json::Value>> {
+        match self {
+          #details_match
+          _ => None,
+        }
+      }
     }
 
     impl actix_web::error::ResponseError for #name {
@@ -250,6 +357,20 @@ pub fn derive_response_error(input: TokenStream) -> TokenStream {
           }
             .and_then(|value| value));
 
+        let _type: Option<String> = ::actix_web_thiserror::ThiserrorResponse::_type(self)
+          .unwrap_or(match self {
+            #type_forwards
+            _ => None,
+          }
+            .and_then(|value| value));
+
+        let details: Option<serde_json::Value> = ::actix_web_thiserror::ThiserrorResponse::details(self)
+          .unwrap_or(match self {
+            #details_forwards
+            _ => None,
+          }
+            .and_then(|value| value));
+
         log::error!("Response error: {err}\n\t{name}({err:?})", name = #name_str, err = &self);
 
         #transform(
@@ -257,6 +378,8 @@ pub fn derive_response_error(input: TokenStream) -> TokenStream {
           &self,
           self.status_code(),
           reason,
+          _type,
+          details,
         )
       }
     }
@@ -367,6 +490,22 @@ fn get_reason(tokens: &mut Peekable<IntoIter>) -> Option<proc_macro2::TokenStrea
   match tokens.peek() {
     Some(TokenTree::Ident(_)) => get_ident_stream(tokens),
 
+    Some(TokenTree::Literal(_)) => get_string(tokens).map(|tokens| tokens.into()),
+
+    _ => None,
+  }
+}
+
+fn get_type(tokens: &mut Peekable<IntoIter>) -> Option<proc_macro2::TokenStream> {
+  match tokens.peek() {
+    Some(TokenTree::Literal(_)) => get_string(tokens).map(|tokens| tokens.into()),
+
+    _ => None,
+  }
+}
+
+fn get_details(tokens: &mut Peekable<IntoIter>) -> Option<proc_macro2::TokenStream> {
+  match tokens.peek() {
     Some(TokenTree::Literal(_)) => get_string(tokens).map(|tokens| tokens.into()),
 
     _ => None,
