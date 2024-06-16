@@ -12,6 +12,7 @@ pub fn derive_response_error(input: TokenStream) -> TokenStream {
 
   let name = ast.ident;
   let name_str = name.to_string();
+  let (impl_generics, ty_generics, where_clause) = ast.generics.split_for_impl();
 
   let variants = if let syn::Data::Enum(syn::DataEnum { variants, .. }) = ast.data {
     variants
@@ -305,7 +306,7 @@ pub fn derive_response_error(input: TokenStream) -> TokenStream {
     .unwrap_or(quote! { actix_web_thiserror::apply_global_transform });
 
   let expanded = quote! {
-    impl ::actix_web_thiserror::ThiserrorResponse for #name {
+    impl #impl_generics ::actix_web_thiserror::ThiserrorResponse for #name #ty_generics #where_clause {
       fn status_code(&self) -> Option<actix_web::http::StatusCode> {
         match self {
           #status_code_match
@@ -335,7 +336,7 @@ pub fn derive_response_error(input: TokenStream) -> TokenStream {
       }
     }
 
-    impl actix_web::error::ResponseError for #name {
+    impl #impl_generics actix_web::error::ResponseError for #name #ty_generics #where_clause {
       fn status_code(&self) -> actix_web::http::StatusCode {
         match ::actix_web_thiserror::ThiserrorResponse::status_code(self) {
           Some(status_code) => status_code,
