@@ -4,6 +4,7 @@ use std::iter::Peekable;
 use proc_macro::TokenStream;
 use proc_macro2::{token_stream::IntoIter, TokenTree};
 use quote::quote;
+use quote::ToTokens as _;
 use syn::parse::Parser;
 use syn::DeriveInput;
 
@@ -48,104 +49,105 @@ pub fn derive_response_error(input: TokenStream) -> TokenStream {
      variant| {
       let variant_ident = variant.ident.to_owned();
 
-      for attr in &variant.attrs {
-        if attr.path.segments.len() == 1 && attr.path.segments[0].ident == "response" {
-          let tokens = attr.tokens.to_owned();
+      for attr in variant.attrs.clone() {
+        if attr.path().segments.len() == 1 && attr.path().segments[0].ident == "response" {
+          let tokens = if let syn::Meta::List(meta_list) = attr.meta {
+            meta_list.tokens
+          } else {
+            panic!("#[response(...)] attribute without any tokens");
+          };
+          let mut tokens = tokens.into_iter().peekable();
 
-          for token in tokens.into_iter() {
-            if let TokenTree::Group(group) = token {
-              let mut tokens = group.stream().into_iter().peekable();
+          while let Some(token) = tokens.next() {
+            if let TokenTree::Ident(ident) = token {
+              let ident = ident.to_string();
+              match &ident as &str {
+                "internal" | "forward" => match &ident as &str {
+                  "internal" => {
+                    internals.insert(variant_ident.to_owned());
+                  }
 
-              while tokens.peek().is_some() {
-                if let Some(TokenTree::Ident(ident)) = tokens.next() {
-                  let ident = ident.to_string();
+                  "forward" => {
+                    forwards.insert(variant_ident.to_owned());
+                  }
+
+                  _ => {
+                    panic!("Unknown #[response] option: {}", &ident);
+                  }
+                },
+
+                _ => {
+                  if tokens
+                    .next()
+                    .map(|punct| punct.to_string())
+                    .filter(|punct| punct as &str == "=")
+                    .is_none()
+                  {
+                    panic!(
+                      "Invalid #[response] options: next token: {:?}",
+                      &tokens.next()
+                    );
+                  }
 
                   match &ident as &str {
-                    "internal" | "forward" => match &ident as &str {
-                      "internal" => {
-                        internals.insert(variant_ident.to_owned());
-                      }
+                    "status" => {
+                      let status_code = get_status_code(&mut tokens);
 
-                      "forward" => {
-                        forwards.insert(variant_ident.to_owned());
+                      match status_code {
+                        Some(status_code) => {
+                          status_map.insert(variant_ident.to_owned(), status_code);
+                        }
+                        _ => panic!("Invalid `status` in #[response]"),
                       }
+                    }
 
-                      _ => {
-                        panic!("Unknown #[response] option: {}", &ident);
+                    "reason" => {
+                      let reason = get_reason(&mut tokens);
+
+                      match reason {
+                        Some(reason) => {
+                          reason_map.insert(variant_ident.to_owned(), reason);
+                        }
+                        _ => panic!("Invalid `reason` in #[response]"),
                       }
-                    },
+                    }
+
+                    "type" => {
+                      let _type = get_type(&mut tokens);
+
+                      match _type {
+                        Some(_type) => {
+                          type_map.insert(variant_ident.to_owned(), _type);
+                        }
+                        _ => panic!("Invalid `type` in #[response]"),
+                      }
+                    }
+
+                    "details" => {
+                      let details = get_details(&mut tokens);
+
+                      match details {
+                        Some(details) => {
+                          details_map.insert(variant_ident.to_owned(), details);
+                        }
+                        _ => panic!("Invalid `details` in #[response]"),
+                      }
+                    }
 
                     _ => {
-                      if tokens
-                        .next()
-                        .map(|punct| punct.to_string())
-                        .filter(|punct| punct as &str == "=")
-                        .is_none()
-                      {
-                        panic!("Invalid #[response] options");
-                      }
-
-                      match &ident as &str {
-                        "status" => {
-                          let status_code = get_status_code(&mut tokens);
-
-                          match status_code {
-                            Some(status_code) => {
-                              status_map.insert(variant_ident.to_owned(), status_code);
-                            }
-                            _ => panic!("Invalid `status` in #[response]"),
-                          }
-                        }
-
-                        "reason" => {
-                          let reason = get_reason(&mut tokens);
-
-                          match reason {
-                            Some(reason) => {
-                              reason_map.insert(variant_ident.to_owned(), reason);
-                            }
-                            _ => panic!("Invalid `reason` in #[response]"),
-                          }
-                        }
-
-                        "type" => {
-                          let _type = get_type(&mut tokens);
-
-                          match _type {
-                            Some(_type) => {
-                              type_map.insert(variant_ident.to_owned(), _type);
-                            }
-                            _ => panic!("Invalid `type` in #[response]"),
-                          }
-                        }
-
-                        "details" => {
-                          let details = get_details(&mut tokens);
-
-                          match details {
-                            Some(details) => {
-                              details_map.insert(variant_ident.to_owned(), details);
-                            }
-                            _ => panic!("Invalid `details` in #[response]"),
-                          }
-                        }
-
-                        _ => {
-                          panic!("Unknown #[response] option: {}", &ident);
-                        }
-                      }
+                      panic!("Unknown #[response] option: {}", &ident);
                     }
                   }
                 }
-
-                match tokens.next().and_then(|token| match token {
-                  TokenTree::Punct(punct) => Some(punct.as_char()),
-                  _ => None,
-                }) {
-                  Some(',') | None => {}
-                  Some(token) => panic!("Invalid #[response] options: at token {:?}", &token),
-                }
               }
+            }
+
+            match tokens.next().and_then(|token| match token {
+              TokenTree::Punct(punct) => Some(punct.as_char()),
+              _ => None,
+            }) {
+              Some(',') | None => {}
+              Some(token) => panic!("Invalid #[response] options: at token {:?}", &token),
             }
           }
         }
@@ -268,11 +270,10 @@ pub fn derive_response_error(input: TokenStream) -> TokenStream {
     .attrs
     .into_iter()
     .find_map(|x| {
-      if !(x.path.segments.len() == 1 && x.path.segments.first()?.ident == "response") {
+      if !(x.path().segments.len() == 1 && x.path().segments.first()?.ident == "response") {
         return None;
       }
-
-      let proc_macro2::TokenTree::Group(group) = x.tokens.into_iter().next()? else {
+      let proc_macro2::TokenTree::Group(group) = x.into_token_stream().into_iter().next()? else {
         return None;
       };
       let ident_assigns =
