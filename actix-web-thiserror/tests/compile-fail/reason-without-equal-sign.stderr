@@ -1,0 +1,7 @@
+error: proc-macro derive panicked
+ --> tests/compile-fail/reason-without-equal-sign.rs:4:24
+  |
+4 | #[derive(Debug, Error, ResponseError)]
+  |                        ^^^^^^^^^^^^^
+  |
+  = help: message: Invalid #[response] options
