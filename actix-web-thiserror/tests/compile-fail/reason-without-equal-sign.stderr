@@ -4,4 +4,4 @@ error: proc-macro derive panicked
 4 | #[derive(Debug, Error, ResponseError)]
   |                        ^^^^^^^^^^^^^
   |
-  = help: message: Invalid #[response] options
+  = help: message: Invalid #[response] options: next token: None
