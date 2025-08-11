@@ -22,8 +22,7 @@ pub fn derive_response_error(input: TokenStream) -> TokenStream {
   };
 
   #[allow(clippy::type_complexity)]
-  let (forwards, _internals, mut status_map, mut reason_map, mut type_map, mut details_map): (
-    HashSet<proc_macro2::Ident>,
+  let (forwards, mut status_map, mut reason_map, mut type_map, mut details_map): (
     HashSet<proc_macro2::Ident>,
     HashMap<proc_macro2::Ident, proc_macro2::TokenStream>,
     HashMap<proc_macro2::Ident, proc_macro2::TokenStream>,
@@ -32,21 +31,12 @@ pub fn derive_response_error(input: TokenStream) -> TokenStream {
   ) = variants.iter().fold(
     (
       HashSet::new(),
-      HashSet::new(),
       HashMap::new(),
       HashMap::new(),
       HashMap::new(),
       HashMap::new(),
     ),
-    |(
-      mut forwards,
-      mut internals,
-      mut status_map,
-      mut reason_map,
-      mut type_map,
-      mut details_map,
-    ),
-     variant| {
+    |(mut forwards, mut status_map, mut reason_map, mut type_map, mut details_map), variant| {
       let variant_ident = variant.ident.to_owned();
 
       for attr in variant.attrs.clone() {
@@ -62,19 +52,9 @@ pub fn derive_response_error(input: TokenStream) -> TokenStream {
             if let TokenTree::Ident(ident) = token {
               let ident = ident.to_string();
               match &ident as &str {
-                "internal" | "forward" => match &ident as &str {
-                  "internal" => {
-                    internals.insert(variant_ident.to_owned());
-                  }
-
-                  "forward" => {
-                    forwards.insert(variant_ident.to_owned());
-                  }
-
-                  _ => {
-                    panic!("Unknown #[response] option: {}", &ident);
-                  }
-                },
+                "forward" => {
+                  let _ = forwards.insert(variant_ident.to_owned());
+                }
 
                 _ => {
                   if tokens
@@ -153,14 +133,7 @@ pub fn derive_response_error(input: TokenStream) -> TokenStream {
         }
       }
 
-      (
-        forwards,
-        internals,
-        status_map,
-        reason_map,
-        type_map,
-        details_map,
-      )
+      (forwards, status_map, reason_map, type_map, details_map)
     },
   );
 
