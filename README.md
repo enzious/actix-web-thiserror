@@ -51,14 +51,29 @@ the error, if appropriate. Here it is as an enum that can be localized.
 
 ## Error logging
 
-The error text automatically prints to the log when the error is returned out
-through a http response.
+Error logging should be done in the [`ResponseTransform::transform`][ResponseTransform::transform] method.
 
-```
-Apr 23 02:19:35.211 ERROR Response error: invalid image format
-    Base64ImageError(InvalidImageFormat), place: example/src/handler.rs:5 example::handler
+```rust
+fn transform(
+  &self,
+  name: &str,
+  err: &dyn std::error::Error,
+  status_code: actix_web::http::StatusCode,
+  reason: Option<serde_json::Value>,
+  _type: Option<String>,
+  details: Option<serde_json::Value>,
+) -> HttpResponse {
+  if let Some(backtrace) = request_ref::<std::backtrace::Backtrace>(&err) {
+    log::error!("Response error: {err}\n{name}\n{backtrace}");
+  } else {
+    log::error!("Response error: {err}\n{name}");
+  }
+
+  HttpResponse::InternalServerError().finish()
+}
 ```
 
 [thiserror]: https://docs.rs/thiserror
 [actix-web]: https://docs.rs/actix-web
 [response_transform]: crate::ResponseTransform
+[ResponseTransform::transform]: crate::ResponseTransform::transform
